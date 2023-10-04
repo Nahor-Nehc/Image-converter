@@ -4,7 +4,7 @@ from components.gui import draw_around_surface
 pygame.mixer.pre_init(44100, 16, 2, 4096)
 pygame.init()
 
-WIDTH, HEIGHT = 960, 560
+WIDTH, HEIGHT = 560, 560
 
 FPS = 30
 
@@ -24,14 +24,14 @@ DBROWN = (159, 100,  64)
 
 # display window that is drawn to
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Time platformer")
+pygame.display.set_caption("Image Converter")
 
 # fonts
 FONT = lambda x: pygame.font.SysFont("consolas.ttf", x)
 TITLEFONT = FONT(70)
 
 # tile property/ies
-TILE_SIZE = 40
+INITIAL_TILE_SIZE = 40
 
 # file locations
 from os import path
@@ -39,14 +39,12 @@ PATH_TO_ATLAS_IMAGE = path.join("assets", "images", "atlas.bmp")
 PATH_TO_LEVELS = path.join("assets", "levels", "levels")
 
 # handles all updates to the window
-def draw(WIN, state, tile_space, debug_mode, texture_atlas, selected_texture, show_commands, player):
+def draw(WIN, state, tile_space, debug_mode, texture_atlas, selected_texture, show_commands, tile_size):
   # create blank canvas
   WIN.fill(BLACK)
   
   # draws the tile_space
   tile_space.draw(WIN)
-  
-  player.draw(WIN)
   
   # extra tools for the dev
   if debug_mode == True:
@@ -54,22 +52,22 @@ def draw(WIN, state, tile_space, debug_mode, texture_atlas, selected_texture, sh
     WIN.blit(text, (0, 0))
     
   # draw which 
-  if state.get_state() == "editor mode":
+  if state.get_state() == "editor":
     
     # draws the box around the image
     border_width = 5
     padding = 10
-    x = WIDTH - TILE_SIZE - border_width*2 - padding
+    x = WIDTH - INITIAL_TILE_SIZE - border_width*2 - padding
     y = padding
-    container = pygame.Rect(x, y, TILE_SIZE + border_width*2, TILE_SIZE + border_width*2)
+    container = pygame.Rect(x, y, INITIAL_TILE_SIZE + border_width*2, INITIAL_TILE_SIZE + border_width*2)
     pygame.draw.rect(WIN, RED, container, border_width)
     
     # draws the texture selected inside the box
     if selected_texture != "delete":
-      image = texture_atlas.get_texture(selected_texture)
+      image = texture_atlas.get_texture(selected_texture, INITIAL_TILE_SIZE)
       WIN.blit(image, (x + border_width, y + border_width))
     else:
-      image = texture_atlas.get_texture("empty")
+      image = texture_atlas.get_texture("empty", INITIAL_TILE_SIZE)
       WIN.blit(image, (x + border_width, y + border_width))
     
     # shows commands
@@ -104,30 +102,25 @@ def main():
   from components.state import State
   from components.textures import TextureAtlas
   from components.tile_space import TileSpace
-  from components.player import Player
   
   # GAME VARIABLES
-  state = State("start")
-  
-  player_image = pygame.Surface((40, 40))
-  player_image.fill(GREEN)
-  player = Player(0, 0, player_image, 5, 1)
+  state = State("editor")
   
   # generates a tiling grid for the game
-  tiling = [[(x, y) for y in range(0, HEIGHT, TILE_SIZE)] for x in range(0, WIDTH, TILE_SIZE)]
+  
   # tiling produces this:
   #  0, 0 40, 0 ...
   # 40,40 80,40 ...
   # ...
   # 
   # tiling[a][b] returns co-ordinates: (20*a, 20*b)
+  tile_size = INITIAL_TILE_SIZE
   
   texture_atlas = TextureAtlas(PATH_TO_ATLAS_IMAGE)
-  tile_space = TileSpace(tiling, texture_atlas, TILE_SIZE)
+  tile_space = TileSpace(texture_atlas, tile_size, WIDTH, HEIGHT)
   
   # EDITOR MODE
-  selected_group = "walls"
-  selected_texture = "wall"
+  selected_texture = "black"
   show_commands = False
   
   # DEBUG MODE
@@ -148,9 +141,6 @@ def main():
 
       #if the "x" button is pressed ...
       if event.type == pygame.QUIT:
-        
-        #save game with shelve?
-        #
 
         #ends game loop
         run = False
@@ -162,46 +152,25 @@ def main():
         import sys
         sys.exit()
         
-      elif event.type == pygame.KEYDOWN:
-        if state.get_state() == "start":
-          if event.key == pygame.K_e: # temp
-            state.set_state("editor mode")
-            
-        elif state.get_state() == "editor mode":
+      elif event.type == pygame.KEYDOWN:            
+        if state.get_state() == "editor":
           # hot_keys for selections
-          if selected_group == "walls":
-            if event.key == pygame.K_1:
-              selected_texture = "wall"
-            elif event.key == pygame.K_2:
-              selected_texture = "wall-middle"
-            elif event.key == pygame.K_3:
-              selected_texture = "wall-left"
-            elif event.key == pygame.K_4:
-              selected_texture = "wall-bottom"
-            elif event.key == pygame.K_5:
-              selected_texture = "wall-right"
-            elif event.key == pygame.K_6:
-              selected_texture = "wall-top"
-            elif event.key == pygame.K_7:
-              selected_texture = "wall-top-left"
-            elif event.key == pygame.K_8:
-              selected_texture = "wall-bottom-left"
-            elif event.key == pygame.K_9:
-              selected_texture = "wall-bottom-right"
-            elif event.key == pygame.K_0:
-              selected_texture = "wall-top-right"
+          if event.key == pygame.K_1:
+            selected_texture = "black"
+          elif event.key == pygame.K_2:
+            selected_texture = "dark"
+          elif event.key == pygame.K_3:
+            selected_texture = "medium"
+          elif event.key == pygame.K_4:
+            selected_texture = "light"
+          elif event.key == pygame.K_5:
+            selected_texture = "white"
           
           if event.key == pygame.K_s:
             from pyautogui import prompt
             name = prompt(text='Name/number of level', title='Save current level' , default='')
             if name != None:
               tile_space.save_tiling(PATH_TO_LEVELS, name)
-          
-          elif event.key == pygame.K_o:
-            from pyautogui import prompt
-            name = prompt(text='Name/number of level', title='Open level' , default='')
-            if name != None:
-              tile_space.load_tiling(PATH_TO_LEVELS, name)
             
           # tools
           elif event.key == pygame.K_c:
@@ -219,15 +188,16 @@ def main():
           elif event.key == pygame.K_SPACE:
             show_commands = not show_commands
           
-          # temp
-          elif event.key == pygame.K_t:
-            state.set_state("game")
-        
-        elif state.get_state() == "game":
-          if event.key == pygame.K_SPACE:
-            player.jump()
+          elif event.key == pygame.K_EQUALS:
+            tile_size += 1
+            tile_space.generate_tiling(tile_size, WIDTH, HEIGHT)
+            
+          elif event.key == pygame.K_MINUS:
+            if len(tile_space.spaces[0].spaces) < 90:
+              tile_size -= 1
+              tile_space.generate_tiling(tile_size, WIDTH, HEIGHT)
       
-    if state.get_state() == "editor mode":
+    if state.get_state() == "editor":
       mouse_inputs = pygame.mouse.get_pressed()
       if mouse_inputs[0]:
         tile = tile_space.collide_tile_point(mouse[0], mouse[1])
@@ -237,10 +207,7 @@ def main():
           tile.empty()
         else:
           tile(selected_texture)
-    
-    pressing = pygame.key.get_pressed()
-    player.update(pressing, state, tile_space)
-    
-    draw(WIN, state, tile_space, debug_mode, texture_atlas, selected_texture, show_commands, player)
+#     print(len(tile_space.spaces[0].spaces))
+    draw(WIN, state, tile_space, debug_mode, texture_atlas, selected_texture, show_commands, tile_size)
 
 main()
