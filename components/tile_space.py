@@ -206,8 +206,8 @@ class TileSpace(MutableSequence):
         break
   
     tile_list = tile_list[:remove]
-    for item in tile_list:
-      print("".join(item))
+    # for item in tile_list:
+    #   print("".join(item))
       
     flattened_list = [column[row] for row in range(len(tile_list[0])) for column in tile_list]
     # print(1, flattened_list)
