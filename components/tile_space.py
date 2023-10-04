@@ -197,7 +197,17 @@ class TileSpace(MutableSequence):
   def create_tile_list(self):
     tile_list = []
     for column in self:
-      tile_list.append([tile.representation for tile in column])
+      col = [tile.representation for tile in column]
+      tile_list.append(col)
+    
+    for i in range(len(tile_list) -1, -1, -1):
+      if tile_list[i] != ["w"]*(len((tile_list[i]))):
+        remove = i+1
+        break
+  
+    tile_list = tile_list[:remove]
+    for item in tile_list:
+      print("".join(item))
       
     flattened_list = [column[row] for row in range(len(tile_list[0])) for column in tile_list]
     # print(1, flattened_list)
@@ -205,15 +215,15 @@ class TileSpace(MutableSequence):
     encoded_list = encode_list(flattened_list)
     # print(2, encoded_list)
     
-    return encoded_list
+    return encoded_list, len(tile_list)
 
   def tile_list_to_RLE(self):
     pass
   
-  def unpack_tile_list(self, tile_list):
-    for column in range(len(self)):
-      for tile in range(len(self[column])):
-        self[column][tile](tile_list[column][tile])
+  # def unpack_tile_list(self, tile_list):
+  #   for column in range(len(self)):
+  #     for tile in range(len(self[column])):
+  #       self[column][tile](tile_list[column][tile])
   
   # def load_tiling(self, path_to_levels_folder, level_name):
   #   from shelve import open as open_shelf
@@ -223,12 +233,12 @@ class TileSpace(MutableSequence):
   #   level_loader.close()
     
   def save_tiling(self, path_to_levels_folder, level_name):   
-    width = len(self.spaces[0].spaces)
+    encoded_list, width = self.create_tile_list()
     if width < 10:
       width = "0" + str(width)
     else:
       width = str(width)
-    text = width + "".join(self.create_tile_list())
+    text = width + "".join(encoded_list)
     
     with open(level_name+".txt", "w") as f:
       f.write(text)
