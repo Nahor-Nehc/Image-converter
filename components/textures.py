@@ -1,4 +1,4 @@
-from pygame import Rect, image
+from pygame import Rect, image, transform
 
 SIZE = 40
 
@@ -8,7 +8,7 @@ TEXTURE_DICTIONARY = {
   "medium":(SIZE*2, 0),
   "light":(SIZE*3, 0),
   "white":(SIZE*4, 0),
-  "empty":(0, SIZE),
+  "empty":(SIZE*4, 0),
 }
 
 # properties: ["letter representation"]
@@ -20,7 +20,7 @@ TEXTURE_PROPERTIES = {
   "medium":["m"],
   "light":["l"],
   "white":["w"],
-  "empty":[],
+  "empty":["w"],
 }
 
 TEXTURE_CODE_LIST = list(TEXTURE_DICTIONARY.keys())
@@ -30,7 +30,7 @@ class TextureAtlas:
     
     self.texture_atlas = image.load(path_to_textures).convert()    
   
-  def get_texture(self, texture_name): #Get a part of the image
+  def get_texture(self, texture_name, tile_size): #Get a part of the image
     try:
       coords = TEXTURE_DICTIONARY[texture_name]
     except KeyError:
@@ -39,5 +39,5 @@ class TextureAtlas:
     handle_surface = self.texture_atlas.copy() #Sprite that will get process later
     clip_rect = Rect(coords[0], coords[1], SIZE, SIZE) #Part of the image
     handle_surface.set_clip(clip_rect) #Clip or you can call cropped
-    image = self.texture_atlas.subsurface(handle_surface.get_clip()) #Get subsurface
-    return image.copy() #Return
+    image_ = self.texture_atlas.subsurface(handle_surface.get_clip()) #Get subsurface
+    return transform.scale(image_.copy(), (tile_size, tile_size)) #Return
