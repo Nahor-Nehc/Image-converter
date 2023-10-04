@@ -1,14 +1,32 @@
 from collections.abc import MutableSequence
 from components.textures import TEXTURE_PROPERTIES, TEXTURE_DICTIONARY
 from pygame import rect
+from itertools import groupby
+
+def encode_list(s_list):
+  list_ = [[key, str(len(list(group)))] for key, group in groupby(s_list)]
+  final_list = []
+  for key, number in list_:
+    number_holder = int(number)
+    while True:
+      if number_holder <= 9:
+        final_list.append("".join([key, str(number_holder)]))
+        break
+      else:
+        final_list.append("".join([key, str(9)]))
+        number_holder -= 9
+  return final_list
+    
 
 class Tile:
-  def __init__(self, atlas, x, y):
+  def __init__(self, atlas, x, y, tiling_size):
+    self.tiling_size = tiling_size
     self.texture_name = None
     self.atlas = atlas
     self.x = x
     self.y = y
-    self.image = self.atlas.get_texture("empty")
+    self.image = self.atlas.get_texture("empty", self.tiling_size)
+    self.set_texture_name("empty")
     
   def __call__(self, texture_name=None):
     self.set_texture_name(texture_name)
@@ -17,7 +35,7 @@ class Tile:
     """texture_name comes from either texture_code_list or texture_dictionary"""
     if texture_name == None:
       self.empty()
-      self.image = self.atlas.get_texture("empty")
+      self.image = self.atlas.get_texture("empty", self.tiling_size)
     elif texture_name != "delete":
       try:
         TEXTURE_DICTIONARY[texture_name]
@@ -26,16 +44,17 @@ class Tile:
       
       self.texture_name = texture_name
       self.properties = TEXTURE_PROPERTIES[texture_name]
-      self.collide_mode = self.properties[0]
-      self.image = self.atlas.get_texture(self.texture_name)
+      self.representation = self.properties[0]
+      self.image = self.atlas.get_texture(self.texture_name, self.tiling_size)
     else:
       self.empty()
-      self.image = self.atlas.get_texture("empty")
+      self.image = self.atlas.get_texture("empty", self.tiling_size)
     
   def empty(self):
     self.texture_name = None
-    self.collide_mode = False
+    self.representation = False
     self.properties = []
+    self.set_texture_name("empty")
   
   def draw(self, window, show_empty_cells):
     if self.texture_name != None:
@@ -46,9 +65,10 @@ class Tile:
       window.blit(self.image, (self.x, self.y))
 
 class TileSpaceColumn(MutableSequence):
-  def __init__(self, tiling, atlas, col):
+  def __init__(self, tiling, atlas, col, tiling_size):
+    self.tiling_size = tiling_size
     self.tiling = tiling
-    self.spaces = [Tile(atlas, coords[0], coords[1]) for coords in self.tiling[col]]
+    self.spaces = [Tile(atlas, coords[0], coords[1], self.tiling_size) for coords in self.tiling[col]]
     super().__init__()
     
   def __getitem__(self, i):
@@ -71,19 +91,24 @@ class TileSpaceColumn(MutableSequence):
       space.draw(window, show_empty_cells)
 
 class TileSpace(MutableSequence):
-  def __init__(self, tiling, atlas, tile_size):
-    self.tiling = tiling
+  def __init__(self, atlas, tile_size, width, height):
     self.tiling_size = tile_size
     self.atlas = atlas
     
-    self.show_empty_cells = False
-    self.gridlines_shown = False
+    self.generate_tiling(tile_size, width, height)
     
-    self.generate_spaces()
+    self.show_empty_cells = True
+    self.gridlines_shown = True
+
     super().__init__()
+  
+  def generate_tiling(self, tile_size, width, height):
+    self.tiling_size = tile_size
+    self.tiling = [[(x, y) for y in range(0, height, self.tiling_size)] for x in range(0, width, self.tiling_size)]
+    self.generate_spaces()
     
   def generate_spaces(self):
-    self.spaces = [TileSpaceColumn(self.tiling, self.atlas, col) for col in range(len(self.tiling))]
+    self.spaces = [TileSpaceColumn(self.tiling, self.atlas, col, self.tiling_size) for col in range(len(self.tiling))]
     
   def __getitem__(self, i):
     return self.spaces[i]
@@ -99,33 +124,14 @@ class TileSpace(MutableSequence):
     
   def insert(self, index, object):
     self.spaces.insert(index, object)
-  
-  def draw(self, window):
-    for space in self.spaces:
-      space.draw(window, self.show_empty_cells)
-    
-    if self.gridlines_shown:
-      last_tile = self.tiling[-1][-1]
-      
-      from pygame import draw
-      
-      # horizontal dashed lines
-      for y in range(0, last_tile[1] + self.tiling_size, self.tiling_size):
-        for x in range(self.tiling_size//8, last_tile[0] + self.tiling_size, self.tiling_size//2):
-          draw.line(window, (255, 255, 255, 50), (x, y), (x + self.tiling_size//4, y))
-        
-      #vertical dashed lines
-      for x in range(0, last_tile[0] + self.tiling_size, self.tiling_size):
-        for y in range(self.tiling_size//8, last_tile[1] + self.tiling_size, self.tiling_size//2):
-          draw.line(window, (255, 255, 255), (x, y), (x, y + self.tiling_size//4))
-  
+
   def collide_tile_point(self, x, y, return_indexes = False) -> Tile:
     if x >= 0:
-      x_index = x//40
+      x_index = x//self.tiling_size
     else:
       x_index = self.spaces[-1][-1].x*2
     if y >= 0:
-      y_index = y//40
+      y_index = y//self.tiling_size
     else:
       y_index = self.spaces[-1][-1].y*2
     try:
@@ -162,7 +168,26 @@ class TileSpace(MutableSequence):
         return tile_indexes
     except IndexError:
       return None
+  
+  def draw(self, window):
+    for space in self.spaces:
+      space.draw(window, self.show_empty_cells)
     
+    if self.gridlines_shown:
+      last_tile = self.tiling[-1][-1]
+      
+      from pygame import draw
+      
+      # horizontal dashed lines
+      for y in range(0, last_tile[1] + self.tiling_size, self.tiling_size):
+        for x in range(self.tiling_size//8, last_tile[0] + self.tiling_size, self.tiling_size//2):
+          draw.line(window, (255, 0, 0, 50), (x, y), (x + self.tiling_size//4, y))
+        
+      #vertical dashed lines
+      for x in range(0, last_tile[0] + self.tiling_size, self.tiling_size):
+        for y in range(self.tiling_size//8, last_tile[1] + self.tiling_size, self.tiling_size//2):
+          draw.line(window, (255, 0, 0, 50), (x, y), (x, y + self.tiling_size//4))
+  
 
   def empty(self):
     for col in self:
@@ -172,37 +197,41 @@ class TileSpace(MutableSequence):
   def create_tile_list(self):
     tile_list = []
     for column in self:
-      tile_list.append([tile.texture_name for tile in column])
-    return tile_list
+      tile_list.append([tile.representation for tile in column])
+      
+    flattened_list = [column[row] for row in range(len(tile_list[0])) for column in tile_list]
+    # print(1, flattened_list)
+
+    encoded_list = encode_list(flattened_list)
+    # print(2, encoded_list)
+    
+    return encoded_list
+
+  def tile_list_to_RLE(self):
+    pass
   
   def unpack_tile_list(self, tile_list):
     for column in range(len(self)):
       for tile in range(len(self[column])):
         self[column][tile](tile_list[column][tile])
   
-  def load_tiling(self, path_to_levels_folder, level_name):
-    from shelve import open as open_shelf
-    level_loader = open_shelf(path_to_levels_folder)
-    tile_list = level_loader[level_name]
-    self.unpack_tile_list(tile_list)
-    level_loader.close()
+  # def load_tiling(self, path_to_levels_folder, level_name):
+  #   from shelve import open as open_shelf
+  #   level_loader = open_shelf(path_to_levels_folder)
+  #   tile_list = level_loader[level_name]
+  #   self.unpack_tile_list(tile_list)
+  #   level_loader.close()
     
-  def save_tiling(self, path_to_levels_folder, level_name):
-    from shelve import open as open_shelf
-    level_loader = open_shelf(path_to_levels_folder)
-    try:
-      _ = level_loader[level_name]
-      from pyautogui import confirm
-      check = confirm(text='WARNING: There is already a file saved here. Do you want to replace it?', title='WARNING: OVERWRITE ERROR', buttons=['Yes', 'No'])
-      if check == "Yes":
-        level_loader[level_name] = self.create_tile_list()
-      elif check == "No":
-        pass
-        
-    except KeyError:
-      level_loader[level_name] = self.create_tile_list()
-
-    level_loader.close()
+  def save_tiling(self, path_to_levels_folder, level_name):   
+    width = len(self.spaces[0].spaces)
+    if width < 10:
+      width = "0" + str(width)
+    else:
+      width = str(width)
+    text = width + "".join(self.create_tile_list())
+    
+    with open(level_name+".txt", "w") as f:
+      f.write(text)
   
   def toggle_gridlines(self):
     self.gridlines_shown = not self.gridlines_shown
