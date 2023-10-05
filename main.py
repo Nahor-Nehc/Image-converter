@@ -81,7 +81,7 @@ def draw(WIN, state, tile_space, debug_mode, texture_atlas, selected_texture, sh
     
     elif show_commands == True:
       padding = 10
-      commands = "E: Eraser\nQ: Show empty cells\nS: Save current edit\nO: Open saved edit\nC: Clear edit\nG: Show gridlines\n-: Decrease pixel size\n=: Increase pixel size"
+      commands = "E: Eraser\nS: Save current image\nO: Open saved edit\nC: Clear image\nG: Show gridlines\n-: Decrease pixel size\n=: Increase pixel size"
       text = FONT(30).render(commands, 1, WHITE)
       x = padding
       y = HEIGHT - text.get_height() - padding
@@ -179,8 +179,8 @@ def main():
           elif event.key == pygame.K_g:
             tile_space.toggle_gridlines()
           
-          elif event.key == pygame.K_q:
-            tile_space.toggle_show_empty_cells()
+          # elif event.key == pygame.K_q:
+          #   tile_space.toggle_show_empty_cells()
           
           elif event.key == pygame.K_e:
             selected_texture = "delete"
