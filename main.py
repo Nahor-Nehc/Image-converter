@@ -73,15 +73,15 @@ def draw(WIN, state, tile_space, debug_mode, texture_atlas, selected_texture, sh
     # shows commands
     if show_commands == False:
       padding = 10
-      text = FONT(30).render("Press SPACE to show commands", 1, WHITE)
+      text = FONT(30).render("Press SPACE to show commands", 1, BLACK)
       x = padding
       y = HEIGHT - text.get_height() - padding
-      draw_around_surface(WIN, text, x, y, padding, BLACK, WHITE, 1)
+      #draw_around_surface(WIN, text, x, y, padding, BLACK, WHITE, 1)
       WIN.blit(text, (padding, HEIGHT - text.get_height() - padding))
     
     elif show_commands == True:
       padding = 10
-      commands = "E: Eraser\nQ: Show empty cells\nS: Save current edit\nO: Open saved edit\nC: Clear edit\nG: Show gridlines"
+      commands = "E: Eraser\nQ: Show empty cells\nS: Save current edit\nO: Open saved edit\nC: Clear edit\nG: Show gridlines\n-: Decrease pixel size\n=: Increase pixel size"
       text = FONT(30).render(commands, 1, WHITE)
       x = padding
       y = HEIGHT - text.get_height() - padding
