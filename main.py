@@ -1,5 +1,6 @@
 import pygame
 from components.gui import draw_around_surface
+import os
 
 pygame.mixer.pre_init(44100, 16, 2, 4096)
 pygame.init()
@@ -27,7 +28,7 @@ WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Image Converter")
 
 # fonts
-FONT = lambda x: pygame.font.SysFont("consolas.ttf", x)
+FONT = lambda x: pygame.font.Font(os.path.join("assets", "fonts", "FiraCode Regular.ttf"), x)
 TITLEFONT = FONT(70)
 
 # tile property/ies
