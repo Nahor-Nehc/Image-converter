@@ -1,6 +1,9 @@
 import pygame
-import pyautogui
 import os
+
+#! WARNING: pyautogui does not work with python on macos due to reasons so
+#! create own dialogue boxes
+import pyautogui
 
 from components.gui import draw_around_surface
 
@@ -12,18 +15,18 @@ WIDTH, HEIGHT = 560, 560
 FPS = 30
 
 # general colours
-BLACK =    (    0,     0,     0)
-WHITE =    (255, 255, 255)
-RED =        (211,     0,     0)
-GREEN =    (    0, 150,     0)
-DGREEN = (    0, 100,     0)
-BLUE =     (    0,     0, 211)
-LBLUE =    (137, 207, 240)
-GREY =     (201, 201, 201)
-LGREY =    (231, 231, 231)
-DGREY =    ( 50,    50,    50)
-LBROWN = (185, 122,    87)
-DBROWN = (159, 100,    64)
+BLACK =  (  0,   0,   0)
+WHITE =  (255, 255, 255)
+RED =    (211,   0,   0)
+GREEN =  (  0, 150,   0)
+DGREEN = (  0, 100,   0)
+BLUE =   (  0,   0, 211)
+LBLUE =  (137, 207, 240)
+GREY =   (201, 201, 201)
+LGREY =  (231, 231, 231)
+DGREY =  ( 50,  50,  50)
+LBROWN = (185, 122,  87)
+DBROWN = (159, 100,  64)
 
 # display window that is drawn to
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
